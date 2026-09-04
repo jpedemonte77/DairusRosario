@@ -581,9 +581,19 @@
   }
 
   /* ================= diseño ================= */
-  const PRESETS = ["#e2b263", "#c0553f", "#7fa87c", "#8fb8d8", "#d9a7c0", "#e8e2d4"];
-  $("#swatches").innerHTML = PRESETS.map((c) =>
-    `<button type="button" class="sw" style="background:${c}" data-c="${c}" aria-pressed="false" title="${c}"></button>`).join("");
+  // Los dos primeros salen de tu marca: el del logo y el de la carta impresa.
+  const PRESETS = [
+    { c: "#2ab49c", n: "Verde Dairus (logo)" },
+    { c: "#5cb098", n: "Verde suave (carta impresa)" },
+    { c: "#e2b263", n: "Dorado" },
+    { c: "#c0553f", n: "Terracota" },
+    { c: "#7fa87c", n: "Salvia" },
+    { c: "#8fb8d8", n: "Celeste" },
+    { c: "#d9a7c0", n: "Rosa" },
+    { c: "#e8e2d4", n: "Crema" }
+  ];
+  $("#swatches").innerHTML = PRESETS.map((p) =>
+    `<button type="button" class="sw" style="background:${p.c}" data-c="${p.c}" aria-pressed="false" title="${p.n} · ${p.c}"></button>`).join("");
   $("#swatches").addEventListener("click", (e) => {
     const b = e.target.closest(".sw");
     if (!b) return;
