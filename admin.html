@@ -34,6 +34,13 @@
        backdrop-filter:blur(10px); border-bottom:1px solid var(--line); margin:0 -16px;
        padding:14px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
   .top .grow{flex:1}
+  /* selector principal: panel o carta */
+  .cambio{display:flex; gap:4px; background:#e9e7e2; border-radius:11px; padding:4px; margin:14px 0 4px}
+  .cambio a{flex:1; text-align:center; padding:9px 10px; border-radius:8px; text-decoration:none;
+            font-size:.86rem; font-weight:600; color:var(--soft); transition:.15s}
+  .cambio a:hover{color:var(--ink)}
+  .cambio a[aria-current="page"]{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
   .tabs{display:flex; gap:6px; margin:0 -16px; padding:10px 16px 0; overflow-x:auto}
   .tab{border:1px solid var(--line); background:var(--card); color:var(--soft); border-radius:999px;
        padding:8px 16px; font:inherit; font-size:.86rem; font-weight:500; cursor:pointer; white-space:nowrap}
@@ -165,9 +172,13 @@
 <div class="wrap" id="appView" hidden>
   <div class="top">
     <h1 class="grow">Carta del bar</h1>
-    <a class="btn sm" id="viewLink" href="index.html" target="_blank" rel="noopener">Ver la carta</a>
     <button class="btn sm" id="logout">Salir</button>
   </div>
+
+  <nav class="cambio">
+    <a href="admin.html" aria-current="page">Administración</a>
+    <a href="./">Carta digital</a>
+  </nav>
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="menu" aria-selected="true">Carta</button>
