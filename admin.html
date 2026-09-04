@@ -504,6 +504,29 @@
     if (acts[b.dataset.act]) acts[b.dataset.act]();
   });
 
+  /* ---- limpieza del depósito de imágenes ----
+     Al reemplazar o quitar una foto, la anterior se borra de Supabase.
+     Sólo toca archivos propios: una foto alojada en otro lado se ignora. */
+
+  function rutaEnDeposito(url) {
+    if (!url) return null;
+    const marca = "/storage/v1/object/public/carta/";
+    const i = url.indexOf(marca);
+    if (i === -1) return null;
+    try { return decodeURIComponent(url.slice(i + marca.length).split("?")[0]); }
+    catch (e) { return null; }
+  }
+
+  // Best effort: si falla, el usuario no se entera. Nunca frena un guardado.
+  async function borrarArchivo(url) {
+    const ruta = rutaEnDeposito(url);
+    if (!ruta) return;
+    try {
+      const { error } = await db.storage.from("carta").remove([ruta]);
+      if (error) console.warn("[panel] no se pudo borrar la foto anterior:", error.message);
+    } catch (e) { console.warn("[panel] no se pudo borrar la foto anterior:", e); }
+  }
+
   /* ================= recortador de fotos =================
      Acepta cualquier foto (celular, cámara, descargada) y la deja
      exactamente en la proporción y el peso que necesita la carta. */
@@ -647,10 +670,12 @@
         ayuda: "Arrastrá para elegir qué parte se ve y usá la barra para acercar. Sale sola en la medida y el peso que necesita la carta." },
       async (blob) => {
         toast("Subiendo foto…");
+        const anterior = (state.categories.find((c) => c.id === id) || {}).image_url;
         try {
           const url = await upload(blob, "seccion");
           const { error } = await db.from("categories").update({ image_url: url }).eq("id", id);
           if (error) throw error;
+          await borrarArchivo(anterior);   // recién ahora: si el guardado falla, no perdemos nada
           toast("Foto lista · " + Math.round(blob.size / 1024) + " KB");
           loadAll();
         } catch (err) { fail(err); }
@@ -658,8 +683,10 @@
   });
 
   async function quitarFotoCat(id) {
+    const anterior = (state.categories.find((c) => c.id === id) || {}).image_url;
     const { error } = await db.from("categories").update({ image_url: null }).eq("id", id);
     if (error) return fail(error);
+    await borrarArchivo(anterior);
     toast("Foto quitada");
     loadAll();
   }
@@ -698,6 +725,7 @@
     if (!confirm("¿Borrar la sección “" + cat.name + "”" + (n ? " y sus " + n + " productos" : "") + "?\n\nNo se puede deshacer.")) return;
     const { error } = await db.from("categories").delete().eq("id", id);
     if (error) return fail(error);
+    await borrarArchivo(cat.image_url);
     toast("Sección borrada");
     loadAll();
   }
@@ -847,10 +875,12 @@
       if (!file) return;
       recortar(file, opciones, async (blob) => {
         toast("Subiendo imagen…");
+        const anterior = state.settings[field];
         try {
           const url = await upload(blob, prefix);
           const { error } = await db.from("settings").update({ [field]: url }).eq("id", 1);
           if (error) throw error;
+          await borrarArchivo(anterior);
           state.settings[field] = url;
           setThumb(thumbSel, url);
           toast("Imagen lista · " + Math.round(blob.size / 1024) + " KB");
@@ -867,8 +897,10 @@
 
   function wireClear(btnSel, thumbSel, field, label) {
     $(btnSel).addEventListener("click", async () => {
+      const anterior = state.settings[field];
       const { error } = await db.from("settings").update({ [field]: null }).eq("id", 1);
       if (error) return fail(error);
+      await borrarArchivo(anterior);
       state.settings[field] = null;
       setThumb(thumbSel, null);
       toast(label + " quitado");
