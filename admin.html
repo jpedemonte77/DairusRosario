@@ -279,8 +279,8 @@
      ========================================================= -->
 <script>
   const CONFIG = {
-    SUPABASE_URL: "https://kkvtsodkmkxxmklsdlru.supabase.co",
-    SUPABASE_ANON_KEY: "sb_publishable_Nr9skTsw2zPsnvBiNHUgbQ_6zAOlA_t"
+    SUPABASE_URL: "",
+    SUPABASE_ANON_KEY: ""
   };
 </script>
 
@@ -323,7 +323,14 @@
       'de Supabase en el bloque CONFIG. Está explicado paso a paso en el archivo LEEME.md.</p></div></div>';
     return;
   }
-  db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  // Tolera que la URL venga con barra final o con /rest/v1 pegado al final.
+  function baseUrl(u) {
+    return String(u || "").trim()
+      .replace(/\/+$/, "")
+      .replace(/\/rest\/v\d+$/, "")
+      .replace(/\/+$/, "");
+  }
+  db = window.supabase.createClient(baseUrl(CONFIG.SUPABASE_URL), CONFIG.SUPABASE_ANON_KEY);
 
   db.auth.getSession().then(({ data }) => (data.session ? start() : showLogin()));
 
