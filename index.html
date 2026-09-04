@@ -120,8 +120,8 @@
      ========================================================= -->
 <script>
   const CONFIG = {
-    SUPABASE_URL: "",
-    SUPABASE_ANON_KEY: ""
+    SUPABASE_URL: "https://kkvtsodkmkxxmklsdlru.supabase.co",
+    SUPABASE_ANON_KEY: "sb_publishable_Nr9skTsw2zPsnvBiNHUgbQ_6zAOlA_t"
   };
 </script>
 
@@ -290,7 +290,14 @@
   }
 
   async function load() {
-    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return render(DEMO);
+    // Sin configurar: mostramos la carta de ejemplo, pero avisando que lo es.
+    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+      render(DEMO);
+      const aviso = $("#offline");
+      aviso.textContent = "Carta de ejemplo — falta conectar la base de datos";
+      aviso.style.display = "block";
+      return;
+    }
 
     const cached = readCache();
     const db = window.supabase.createClient(baseUrl(CONFIG.SUPABASE_URL), CONFIG.SUPABASE_ANON_KEY);
