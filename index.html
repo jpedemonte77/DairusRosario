@@ -138,6 +138,16 @@
   .spinner{width:26px; height:26px; margin:0 auto 16px; border:2px solid var(--line);
            border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  /* Vuelta al panel: sólo se muestra si hay sesión de administrador iniciada.
+     Un cliente que escanea el QR nunca lo ve. */
+  .al-panel{
+    position:fixed; right:14px; z-index:10; text-decoration:none;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    background:var(--accent); color:var(--accent-ink);
+    padding:10px 18px; border-radius:999px;
+    font-size:.78rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+  }
   .offline{position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:9;
            background:var(--aviso); border:1px solid var(--line); color:#f2ede5;
            padding:8px 16px; border-radius:999px; font-size:.76rem; display:none}
@@ -159,6 +169,7 @@
   <footer id="footer" hidden></footer>
 </div>
 <div class="offline" id="offline">Sin conexión — mostrando la última carta guardada</div>
+<a class="al-panel" id="alPanel" href="admin.html" hidden>Panel</a>
 
 <!-- =========================================================
      CONFIGURACIÓN  ·  pegá acá los datos de tu proyecto Supabase
@@ -374,6 +385,11 @@
     if (!window.supabase || !window.supabase.createClient) return sinRed("no cargó la librería de Supabase");
 
     const db = window.supabase.createClient(baseUrl(CONFIG.SUPABASE_URL), CONFIG.SUPABASE_ANON_KEY);
+
+    // Si el navegador tiene sesión de administrador, ofrecemos la vuelta al panel.
+    db.auth.getSession()
+      .then(({ data }) => { if (data && data.session) $("#alPanel").hidden = false; })
+      .catch(() => {});
 
     try {
       const [s, c, p] = await Promise.all([
