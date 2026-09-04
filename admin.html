@@ -196,7 +196,12 @@
 
     <div class="card">
       <h2>Colores y tipografía</h2>
-      <label for="f_accent">Color de acento</label>
+      <label for="f_theme">Tema de la carta</label>
+      <select id="f_theme">
+        <option value="oscuro">Oscuro — fondo negro, texto claro</option>
+        <option value="claro">Claro — como la carta impresa</option>
+      </select>
+      <label for="f_accent" style="margin-top:20px">Color de acento</label>
       <div class="colorline">
         <input type="color" id="f_accent" value="#e2b263">
         <div class="swatches" id="swatches"></div>
@@ -599,6 +604,7 @@
     $("#f_footer").value = s.footer_text || "";
     $("#f_accent").value = s.accent || "#e2b263";
     $("#f_font").value = s.font || "serif";
+    $("#f_theme").value = s.theme === "claro" ? "claro" : "oscuro";
     $("#f_symbol").value = s.currency_symbol || "$";
     const dim = Math.round((s.bg_dim == null ? 0.6 : s.bg_dim) * 100);
     $("#f_dim").value = dim;
@@ -663,6 +669,7 @@
       footer_text: $("#f_footer").value,
       accent: $("#f_accent").value,
       font: $("#f_font").value,
+      theme: $("#f_theme").value,
       currency_symbol: $("#f_symbol").value.trim() || "$",
       bg_dim: Number($("#f_dim").value) / 100
     }).eq("id", 1);
