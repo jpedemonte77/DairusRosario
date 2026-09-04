@@ -186,7 +186,7 @@
 
     <div class="card">
       <h2>Imágenes</h2>
-      <p class="hint">JPG o PNG. Se recomienda menos de 1 MB por imagen para que cargue rápido en el celular.</p>
+      <p class="hint">JPG o PNG, menos de 1 MB. Las fotos de sección se ven mejor apaisadas (más anchas que altas), con el motivo al centro.</p>
       <label for="f_bg">Imagen de fondo</label>
       <input type="file" id="f_bg" accept="image/*">
       <img class="thumb" id="bgThumb" alt="">
@@ -197,9 +197,6 @@
       <img class="thumb round" id="logoThumb" alt="">
       <button class="btn sm danger" id="logoClear" style="margin-top:8px">Quitar logo</button>
 
-      <label for="f_secalpha" style="margin-top:24px">Intensidad de las fotos de sección — <span id="secVal">30%</span></label>
-      <input type="range" id="f_secalpha" min="0" max="80" step="5">
-      <p class="hint" style="margin-top:6px">Cada sección puede tener su propia foto de fondo (se cargan en la pestaña Carta). Esto regula cuánto se ven.</p>
     </div>
 
     <div class="card">
@@ -432,7 +429,7 @@
         <div class="catfoto">
           ${c.image_url
             ? '<img src="' + esc(c.image_url) + '" alt="">'
-            : '<span class="sinfoto">Sin foto de fondo</span>'}
+            : '<span class="sinfoto">Sin foto</span>'}
           <button class="btn sm" data-act="cfoto" data-id="${c.id}">${c.image_url ? "Cambiar foto" : "Agregar foto"}</button>
           ${c.image_url ? '<button class="btn sm danger" data-act="cfotodel" data-id="' + c.id + '">Quitar</button>' : ""}
         </div>
@@ -650,7 +647,6 @@
   }
   $("#f_accent").addEventListener("input", markSwatch);
   $("#f_dim").addEventListener("input", () => ($("#dimVal").textContent = $("#f_dim").value + "%"));
-  $("#f_secalpha").addEventListener("input", () => ($("#secVal").textContent = $("#f_secalpha").value + "%"));
 
   function fillDesign() {
     const s = state.settings;
@@ -664,9 +660,6 @@
     const dim = Math.round((s.bg_dim == null ? 0.6 : s.bg_dim) * 100);
     $("#f_dim").value = dim;
     $("#dimVal").textContent = dim + "%";
-    const sa = Math.round((s.sec_alpha == null ? 0.3 : s.sec_alpha) * 100);
-    $("#f_secalpha").value = sa;
-    $("#secVal").textContent = sa + "%";
     setThumb("#bgThumb", s.bg_url);
     setThumb("#logoThumb", s.logo_url);
     markSwatch();
@@ -729,8 +722,7 @@
       font: $("#f_font").value,
       theme: $("#f_theme").value,
       currency_symbol: $("#f_symbol").value.trim() || "$",
-      bg_dim: Number($("#f_dim").value) / 100,
-      sec_alpha: Number($("#f_secalpha").value) / 100
+      bg_dim: Number($("#f_dim").value) / 100
     }).eq("id", 1);
     btn.disabled = false;
     if (error) return fail(error);
