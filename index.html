@@ -100,7 +100,15 @@
   .chip[aria-current="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:500}
 
   /* ---------- secciones ---------- */
-  section{padding-top:44px; scroll-margin-top:74px}
+  section{padding-top:44px; scroll-margin-top:74px; position:relative}
+  /* Foto de la sección: se desvanece hacia abajo para que el texto siempre se lea. */
+  section.con-foto::before{
+    content:''; position:absolute; left:-20px; right:-20px; top:24px; height:250px; z-index:-1;
+    background:var(--sec-img) center/cover no-repeat;
+    opacity:var(--sec-alpha,.30); pointer-events:none;
+    -webkit-mask-image:linear-gradient(180deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.6) 42%, rgba(0,0,0,0) 100%);
+    mask-image:linear-gradient(180deg, rgba(0,0,0,.95) 0%, rgba(0,0,0,.6) 42%, rgba(0,0,0,0) 100%);
+  }
   h2{
     font-family:var(--font); font-weight:500; font-size:1.42rem; margin:0;
     letter-spacing:.02em; color:var(--accent-text);
@@ -231,6 +239,7 @@
     const root = document.documentElement.style;
     root.setProperty("--accent", s.accent || "#e2b263");
     root.setProperty("--dim", s.bg_dim == null ? 0.6 : s.bg_dim);
+    root.setProperty("--sec-alpha", s.sec_alpha == null ? 0.3 : s.sec_alpha);
     root.setProperty("--font", FONTS[s.font] || FONTS.serif);
     if (s.bg_url) $("#bg").style.backgroundImage = "url('" + s.bg_url.replace(/'/g, "%27") + "')";
     const logo = $("#logo");
@@ -280,7 +289,10 @@
           ${p.description ? '<p class="item-desc">' + esc(p.description) + "</p>" : ""}
         </article>`;
       }).join("");
-      return `<section id="sec-${esc(c.id)}">
+      const foto = c.image_url
+        ? ' class="con-foto" style="--sec-img:url(&quot;' + esc(c.image_url) + '&quot;)"'
+        : "";
+      return `<section id="sec-${esc(c.id)}"${foto}>
           <div class="sec-head">
             <h2>${esc(c.name)}</h2>
             ${c.description ? '<p class="sec-desc">' + esc(c.description) + "</p>" : ""}
