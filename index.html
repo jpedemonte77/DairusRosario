@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carta</title>
+<meta name="theme-color" content="#0d0b0a">
+<meta name="description" content="Carta digital">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JPSoft Dairus">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&family=Oswald:wght@200;300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ---------- tema oscuro (por defecto) ---------- */
+  :root{
+    --accent:#e2b263;
+    --accent-text:var(--accent);
+    --accent-ink:#161208;      /* texto sobre el color de acento */
+    --dim:.60;
+    --font:'Playfair Display', Georgia, serif;
+    --body-font:'Inter', system-ui, sans-serif;
+    --bg:#0d0b0a;
+    --veil:9,8,7;              /* velo sobre la foto de fondo */
+    --ink:#f6f1e9;
+    --ink-soft:rgba(246,241,233,.62);
+    --line:rgba(246,241,233,.18);
+    --line-soft:rgba(246,241,233,.07);
+    --dots:rgba(246,241,233,.28);
+    --nav-a:rgba(9,8,7,.94);
+    --nav-b:rgba(9,8,7,.72);
+    --aviso:rgba(20,17,14,.94);
+  }
+  /* ---------- tema claro: la paleta de la carta impresa ---------- */
+  :root[data-theme="claro"]{
+    --accent-text:#2f6152;                                     /* si el navegador no soporta color-mix */
+    --accent-text:color-mix(in srgb, var(--accent) 74%, #0f2a24);
+    --accent-ink:#ffffff;
+    --bg:#f7f2ea;
+    --veil:247,242,234;
+    --ink:#2b332e;
+    --ink-soft:rgba(43,51,46,.74);   /* más contraste que en oscuro: sobre crema hace falta */
+    --line:rgba(43,51,46,.16);
+    --line-soft:rgba(43,51,46,.08);
+    --dots:rgba(43,51,46,.26);
+    --nav-a:rgba(247,242,234,.95);
+    --nav-b:rgba(247,242,234,.74);
+    --aviso:rgba(43,51,46,.94);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--body-font); font-weight:300;
+    line-height:1.5; letter-spacing:.01em;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  #bg{position:fixed; inset:0; z-index:0; background:var(--bg) center/cover no-repeat; }
+  #bg::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg,
+      rgba(var(--veil),calc(var(--dim) * .82)) 0%,
+      rgba(var(--veil),var(--dim)) 38%,
+      rgba(var(--veil),calc(var(--dim) + (1 - var(--dim)) * .55)) 100%);}
+  .wrap{position:relative; z-index:1; max-width:640px; margin:0 auto; padding:0 20px 72px}
+
+  /* ---------- encabezado ---------- */
+  header{padding:56px 0 26px; text-align:center}
+  /* Recorte circular: sirve tanto para un logo ya redondo como para uno cuadrado. */
+  #logo{
+    width:120px; height:120px; border-radius:50%; object-fit:cover;
+    margin:0 auto 20px; display:none;
+  }
+  h1{
+    font-family:var(--font); font-weight:600; margin:0;
+    font-size:clamp(2rem, 9vw, 2.9rem); line-height:1.08; letter-spacing:.005em;
+  }
+  #tagline{margin:12px auto 0; max-width:34ch; color:var(--ink-soft); font-size:.92rem; letter-spacing:.06em; text-transform:uppercase}
+  .rule{width:54px; height:1px; background:var(--accent); margin:24px auto 0; opacity:.85}
+
+  /* ---------- navegación ---------- */
+  nav{
+    position:sticky; top:0; z-index:5; margin:26px -20px 0; padding:11px 0;
+    background:linear-gradient(180deg, var(--nav-a), var(--nav-b));
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid transparent; transition:border-color .25s;
+  }
+  nav.stuck{border-bottom-color:var(--line)}
+  .chips{display:flex; gap:8px; overflow-x:auto; padding:0 20px; scrollbar-width:none; -ms-overflow-style:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto; border:1px solid var(--line); background:transparent; color:var(--ink-soft);
+    padding:7px 15px; border-radius:999px; font:inherit; font-size:.8rem; letter-spacing:.09em;
+    text-transform:uppercase; cursor:pointer; white-space:nowrap; transition:.2s;
+  }
+  .chip[aria-current="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:500}
+
+  /* ---------- secciones ---------- */
+  section{padding-top:44px; scroll-margin-top:74px; position:relative}
+  /* Foto de la sección: se muestra entera, a todo el ancho, arriba del título. */
+  section.con-foto{padding-top:0}
+  .sec-foto{
+    display:block; width:calc(100% + 40px); margin:36px -20px 0;
+    height:150px; object-fit:cover; background:var(--line-soft);
+  }
+  section.con-foto .sec-head{padding-top:20px}
+  @media (min-width:520px){ .sec-foto{height:180px} }
+  h2{
+    font-family:var(--font); font-weight:500; font-size:1.42rem; margin:0;
+    letter-spacing:.02em; color:var(--accent-text);
+  }
+  .sec-desc{margin:6px 0 0; color:var(--ink-soft); font-size:.88rem}
+  /* Barrita corta bajo el título, como en la carta impresa. */
+  .sec-head{padding-bottom:14px; margin-bottom:6px; border-bottom:1px solid var(--line-soft)}
+  h2::after{content:''; display:block; width:46px; height:2px; background:var(--accent); margin-top:9px}
+
+  .item{padding:16px 0; border-bottom:1px solid var(--line-soft)}
+  .item:last-child{border-bottom:none}
+  .item-head{display:flex; align-items:baseline; gap:10px}
+  .item-name{font-weight:500; font-size:1.02rem; color:var(--ink)}
+  .dots{flex:1 1 auto; height:0; border-bottom:1px dotted var(--dots); transform:translateY(-4px); min-width:14px}
+  .item-price{font-weight:500; font-size:1rem; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink)}
+  .item-note{font-size:.75rem; color:var(--ink-soft); margin-left:6px}
+  .item-desc{margin:5px 0 0; color:var(--ink-soft); font-size:.88rem; max-width:52ch}
+
+  /* ---------- pie ---------- */
+  footer{margin-top:56px; padding-top:26px; border-top:1px solid var(--line); text-align:center;
+         color:var(--ink-soft); font-size:.84rem; white-space:pre-line; line-height:1.7}
+  footer a{color:var(--accent-text); text-decoration:none}
+  .stamp{margin-top:22px; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; opacity:.45}
+
+  /* ---------- estados ---------- */
+  .state{padding:90px 20px; text-align:center; color:var(--ink-soft)}
+  .spinner{width:26px; height:26px; margin:0 auto 16px; border:2px solid var(--line);
+           border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* Vuelta al panel: sólo se muestra si hay sesión de administrador iniciada.
+     Un cliente que escanea el QR nunca lo ve. */
+  .al-panel{
+    position:fixed; right:14px; z-index:10; text-decoration:none;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    background:var(--accent); color:var(--accent-ink);
+    padding:10px 18px; border-radius:999px;
+    font-size:.78rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+  }
+  .offline{position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:9;
+           background:var(--aviso); border:1px solid var(--line); color:#f2ede5;
+           padding:8px 16px; border-radius:999px; font-size:.76rem; display:none}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important; scroll-behavior:auto !important}}
+  html{scroll-behavior:smooth}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div class="wrap">
+  <header>
+    <img id="logo" alt="">
+    <h1 id="barName">&nbsp;</h1>
+    <p id="tagline"></p>
+    <div class="rule"></div>
+  </header>
+  <nav id="nav" hidden><div class="chips" id="chips"></div></nav>
+  <main id="menu"><div class="state"><div class="spinner"></div>Cargando la carta…</div></main>
+  <footer id="footer" hidden></footer>
+</div>
+<div class="offline" id="offline">Sin conexión — mostrando la última carta guardada</div>
+<a class="al-panel" id="alPanel" href="admin.html" hidden>Administración</a>
+
+<!-- =========================================================
+     CONFIGURACIÓN  ·  pegá acá los datos de tu proyecto Supabase
+     (si los dejás vacíos, la página muestra una carta de ejemplo)
+     ========================================================= -->
+<script>
+  const CONFIG = {
+    SUPABASE_URL: "https://kkvtsodkmkxxmklsdlru.supabase.co",
+    SUPABASE_ANON_KEY: "sb_publishable_Nr9skTsw2zPsnvBiNHUgbQ_6zAOlA_t"
+  };
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const CACHE_KEY = "carta_cache_v1";
+  const FONTS = {
+    serif: "'Playfair Display', Georgia, serif",
+    sans: "'Inter', system-ui, sans-serif",
+    condensed: "'Oswald', system-ui, sans-serif"
+  };
+
+  /* ---------- carta de ejemplo (modo demo) ---------- */
+  const DEMO = {
+    settings: {
+      bar_name: "Bar Ejemplo", tagline: "Cocina de barra · Coctelería",
+      logo_url: null, bg_url: null, bg_dim: 0.6, accent: "#e2b263", font: "serif",
+      currency_symbol: "$",
+      footer_text: "Av. Siempreviva 742 · Mar-Dom 19 a 02 h\n@barejemplo"
+    },
+    categories: [
+      { id: "c1", name: "Para empezar", description: "", sort_order: 1, visible: true },
+      { id: "c2", name: "Tragos de autor", description: "Preparados al momento", sort_order: 2, visible: true },
+      { id: "c3", name: "Cervezas", description: "", sort_order: 3, visible: true }
+    ],
+    products: [
+      { id: "p1", category_id: "c1", name: "Papas bravas", description: "Con alioli de ajo asado y pimentón ahumado", price: 6500, price_note: "", sort_order: 1, visible: true },
+      { id: "p2", category_id: "c1", name: "Tabla de fiambres", description: "Selección de tres quesos, jamón crudo y encurtidos", price: 12800, price_note: "para 2", sort_order: 2, visible: true },
+      { id: "p3", category_id: "c2", name: "Negroni de la casa", description: "Gin infusionado en pomelo, vermut rosso, campari", price: 8200, price_note: "", sort_order: 1, visible: true },
+      { id: "p4", category_id: "c2", name: "Gin tonic botánico", description: "Gin nacional, tónica, romero y enebro", price: 7600, price_note: "", sort_order: 2, visible: true },
+      { id: "p5", category_id: "c3", name: "Pinta rubia tirada", description: "", price: 4500, price_note: "473 ml", sort_order: 1, visible: true },
+      { id: "p6", category_id: "c3", name: "IPA rotativa", description: "Preguntá cuál está de turno", price: 5200, price_note: "473 ml", sort_order: 2, visible: true }
+    ]
+  };
+
+  /* ---------- utilidades ---------- */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  function money(value, symbol) {
+    if (value == null || value === "") return "";
+    const n = Number(value);
+    if (!isFinite(n)) return "";
+    const dec = n % 1 === 0 ? 0 : 2;
+    return (symbol || "$") + " " + n.toLocaleString("es-AR", {
+      minimumFractionDigits: dec, maximumFractionDigits: dec
+    });
+  }
+
+  function readCache() {
+    try { return JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (e) { return null; }
+  }
+  function writeCache(data) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) { /* modo privado */ }
+  }
+
+  /* ---------- pintar ---------- */
+  function applyTheme(s) {
+    // Tema claro u oscuro: cambia toda la paleta de una.
+    const tema = s.theme === "claro" ? "claro" : "oscuro";
+    document.documentElement.dataset.theme = tema;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = tema === "claro" ? "#f7f2ea" : "#0d0b0a";
+
+    const root = document.documentElement.style;
+    root.setProperty("--accent", s.accent || "#e2b263");
+    root.setProperty("--dim", s.bg_dim == null ? 0.6 : s.bg_dim);
+    root.setProperty("--font", FONTS[s.font] || FONTS.serif);
+    if (s.bg_url) $("#bg").style.backgroundImage = "url('" + s.bg_url.replace(/'/g, "%27") + "')";
+    const logo = $("#logo");
+    if (s.logo_url) { logo.src = s.logo_url; logo.alt = s.bar_name || ""; logo.style.display = "block"; }
+    $("#barName").textContent = s.bar_name || "Carta";
+    $("#tagline").textContent = s.tagline || "";
+    document.title = s.bar_name ? s.bar_name + " · Carta" : "Carta";
+  }
+
+  function linkify(text) {
+    return esc(text)
+      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/(^|\s)@([a-zA-Z0-9._]+)/g, '$1<a href="https://instagram.com/$2" target="_blank" rel="noopener">@$2</a>');
+  }
+
+  function render(data) {
+    applyTheme(data.settings || {});
+    const symbol = (data.settings && data.settings.currency_symbol) || "$";
+    const cats = (data.categories || []).filter((c) => c.visible !== false)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const prods = (data.products || []).filter((p) => p.visible !== false)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    const menu = $("#menu");
+    const withItems = cats.filter((c) => prods.some((p) => p.category_id === c.id));
+
+    if (!withItems.length) {
+      menu.innerHTML = '<div class="state">La carta se está actualizando.<br>Volvé a intentar en un rato.</div>';
+      $("#nav").hidden = true;
+      return;
+    }
+
+    menu.innerHTML = withItems.map((c) => {
+      const items = prods.filter((p) => p.category_id === c.id).map((p) => {
+        const precio = money(p.price, symbol);
+        const nota = p.price_note ? '<span class="item-note">' + esc(p.price_note) + "</span>" : "";
+        // Sin precio cargado no dibujamos los puntitos: quedarían colgando en el vacío.
+        const derecha = precio
+          ? '<span class="dots"></span><span class="item-price">' + esc(precio) + nota + "</span>"
+          : (p.price_note ? '<span class="dots"></span><span class="item-price">' + nota + "</span>" : "");
+        return `
+        <article class="item">
+          <div class="item-head">
+            <span class="item-name">${esc(p.name)}</span>
+            ${derecha}
+          </div>
+          ${p.description ? '<p class="item-desc">' + esc(p.description) + "</p>" : ""}
+        </article>`;
+      }).join("");
+      const foto = c.image_url
+        ? '<img class="sec-foto" src="' + esc(c.image_url) + '" alt="" loading="lazy" decoding="async">'
+        : "";
+      return `<section id="sec-${esc(c.id)}"${c.image_url ? ' class="con-foto"' : ""}>
+          ${foto}
+          <div class="sec-head">
+            <h2>${esc(c.name)}</h2>
+            ${c.description ? '<p class="sec-desc">' + esc(c.description) + "</p>" : ""}
+          </div>${items}
+        </section>`;
+    }).join("");
+
+    const chips = $("#chips");
+    chips.innerHTML = withItems.map((c, i) =>
+      `<button class="chip" data-target="sec-${esc(c.id)}" aria-current="${i === 0}">${esc(c.name)}</button>`).join("");
+    $("#nav").hidden = withItems.length < 2;
+
+    chips.addEventListener("click", (e) => {
+      const b = e.target.closest(".chip");
+      if (!b) return;
+      const el = document.getElementById(b.dataset.target);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    const foot = $("#footer");
+    const txt = (data.settings && data.settings.footer_text) || "";
+    foot.innerHTML = linkify(txt) + '<div class="stamp">Carta digital</div>';
+    foot.hidden = false;
+
+    setupScrollSpy();
+  }
+
+  function setupScrollSpy() {
+    const nav = $("#nav");
+    const sections = [].slice.call(document.querySelectorAll("main section"));
+    const chips = [].slice.call(document.querySelectorAll(".chip"));
+    if (!sections.length || !("IntersectionObserver" in window)) return;
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        chips.forEach((ch) => ch.setAttribute("aria-current", ch.dataset.target === en.target.id));
+        const active = chips.find((ch) => ch.dataset.target === en.target.id);
+        if (active && active.scrollIntoView) {
+          active.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      });
+    }, { rootMargin: "-72px 0px -70% 0px", threshold: 0 });
+    sections.forEach((s) => io.observe(s));
+
+    addEventListener("scroll", () => {
+      nav.classList.toggle("stuck", nav.getBoundingClientRect().top <= 1);
+    }, { passive: true });
+  }
+
+  /* ---------- carga ---------- */
+  // Tolera que la URL venga con barra final o con /rest/v1 pegado al final.
+  function baseUrl(u) {
+    return String(u || "").trim()
+      .replace(/\/+$/, "")
+      .replace(/\/rest\/v\d+$/, "")
+      .replace(/\/+$/, "");
+  }
+
+  async function load() {
+    // Sin configurar: mostramos la carta de ejemplo, pero avisando que lo es.
+    if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+      render(DEMO);
+      const aviso = $("#offline");
+      aviso.textContent = "Carta de ejemplo — falta conectar la base de datos";
+      aviso.style.display = "block";
+      return;
+    }
+
+    const cached = readCache();
+
+    const sinRed = (msg) => {
+      console.error("[carta] " + msg);
+      if (cached) { render(cached); $("#offline").style.display = "block"; }
+      else $("#menu").innerHTML = '<div class="state">No pudimos cargar la carta.<br>Revisá tu conexión y volvé a intentar.</div>';
+    };
+
+    // Si el CDN no cargó (wifi caído, bloqueador), mostramos la última carta guardada.
+    if (!window.supabase || !window.supabase.createClient) return sinRed("no cargó la librería de Supabase");
+
+    const db = window.supabase.createClient(baseUrl(CONFIG.SUPABASE_URL), CONFIG.SUPABASE_ANON_KEY);
+
+    // Si el navegador tiene sesión de administrador, ofrecemos la vuelta al panel.
+    db.auth.getSession()
+      .then(({ data }) => { if (data && data.session) $("#alPanel").hidden = false; })
+      .catch(() => {});
+
+    try {
+      const [s, c, p] = await Promise.all([
+        db.from("settings").select("*").eq("id", 1).maybeSingle(),
+        db.from("categories").select("*").order("sort_order"),
+        db.from("products").select("*").order("sort_order")
+      ]);
+      if (s.error || c.error || p.error) throw (s.error || c.error || p.error);
+
+      const data = { settings: s.data || DEMO.settings, categories: c.data || [], products: p.data || [] };
+      writeCache(data);
+      render(data);
+    } catch (err) {
+      console.error("[carta] no se pudo cargar:", err);
+      sinRed("error al consultar la base");
+    }
+  }
+
+  load();
+
+  // App instalable: registra el service worker (si el navegador no lo soporta, no pasa nada).
+  if ("serviceWorker" in navigator) {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+})();
+</script>
+</body>
+</html>
