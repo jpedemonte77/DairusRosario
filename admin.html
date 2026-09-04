@@ -112,6 +112,10 @@
   /* diseño */
   .thumb{width:100%; height:120px; object-fit:cover; border-radius:9px; border:1px solid var(--line);
          background:#eceae5; display:block; margin-top:8px}
+  /* Foto de fondo de cada sección */
+  .catfoto{display:flex; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap}
+  .catfoto img{width:74px; height:48px; object-fit:cover; border-radius:7px; border:1px solid var(--line)}
+  .catfoto .sinfoto{color:var(--soft); font-size:.82rem}
   /* Vista previa del logo tal como se ve en la carta: recortado en círculo */
   .thumb.round{width:120px; height:120px; border-radius:50%; background:#2a2724; margin:10px auto 0}
   .swatches{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
@@ -192,6 +196,10 @@
       <input type="file" id="f_logo" accept="image/*">
       <img class="thumb round" id="logoThumb" alt="">
       <button class="btn sm danger" id="logoClear" style="margin-top:8px">Quitar logo</button>
+
+      <label for="f_secalpha" style="margin-top:24px">Intensidad de las fotos de sección — <span id="secVal">30%</span></label>
+      <input type="range" id="f_secalpha" min="0" max="80" step="5">
+      <p class="hint" style="margin-top:6px">Cada sección puede tener su propia foto de fondo (se cargan en la pestaña Carta). Esto regula cuánto se ven.</p>
     </div>
 
     <div class="card">
@@ -286,6 +294,7 @@
   </form>
 </dialog>
 
+<input type="file" id="catImgInput" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
 
 <!-- =========================================================
@@ -420,6 +429,13 @@
           </div>
         </div>
         ${c.description ? '<p class="hint" style="margin:8px 0 0">' + esc(c.description) + "</p>" : ""}
+        <div class="catfoto">
+          ${c.image_url
+            ? '<img src="' + esc(c.image_url) + '" alt="">'
+            : '<span class="sinfoto">Sin foto de fondo</span>'}
+          <button class="btn sm" data-act="cfoto" data-id="${c.id}">${c.image_url ? "Cambiar foto" : "Agregar foto"}</button>
+          ${c.image_url ? '<button class="btn sm danger" data-act="cfotodel" data-id="' + c.id + '">Quitar</button>' : ""}
+        </div>
         <div class="items">
           ${items.length ? items.map((p, j) => `
             <div class="row${p.visible ? "" : " muted"}">
@@ -452,6 +468,8 @@
       ctoggle: () => toggle("categories", id),
       cup: () => move("categories", state.categories, id, -1),
       cdown: () => move("categories", state.categories, id, 1),
+      cfoto: () => { catFotoPendiente = id; $("#catImgInput").click(); },
+      cfotodel: () => quitarFotoCat(id),
       padd: () => prodDialog(null, id),
       pedit: () => prodDialog(state.products.find((p) => p.id === id)),
       pdel: () => delProduct(id),
@@ -461,6 +479,32 @@
     };
     if (acts[b.dataset.act]) acts[b.dataset.act]();
   });
+
+  /* ---- foto de fondo de una sección ---- */
+  let catFotoPendiente = null;
+
+  $("#catImgInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    const id = catFotoPendiente;
+    e.target.value = "";
+    catFotoPendiente = null;
+    if (!file || !id) return;
+    toast("Subiendo foto…");
+    try {
+      const url = await upload(file, "seccion");
+      const { error } = await db.from("categories").update({ image_url: url }).eq("id", id);
+      if (error) throw error;
+      toast("Foto actualizada");
+      loadAll();
+    } catch (err) { fail(err); }
+  });
+
+  async function quitarFotoCat(id) {
+    const { error } = await db.from("categories").update({ image_url: null }).eq("id", id);
+    if (error) return fail(error);
+    toast("Foto quitada");
+    loadAll();
+  }
 
   /* ---- secciones ---- */
   $("#addCat").addEventListener("click", () => catDialog(null));
@@ -606,6 +650,7 @@
   }
   $("#f_accent").addEventListener("input", markSwatch);
   $("#f_dim").addEventListener("input", () => ($("#dimVal").textContent = $("#f_dim").value + "%"));
+  $("#f_secalpha").addEventListener("input", () => ($("#secVal").textContent = $("#f_secalpha").value + "%"));
 
   function fillDesign() {
     const s = state.settings;
@@ -619,6 +664,9 @@
     const dim = Math.round((s.bg_dim == null ? 0.6 : s.bg_dim) * 100);
     $("#f_dim").value = dim;
     $("#dimVal").textContent = dim + "%";
+    const sa = Math.round((s.sec_alpha == null ? 0.3 : s.sec_alpha) * 100);
+    $("#f_secalpha").value = sa;
+    $("#secVal").textContent = sa + "%";
     setThumb("#bgThumb", s.bg_url);
     setThumb("#logoThumb", s.logo_url);
     markSwatch();
@@ -681,7 +729,8 @@
       font: $("#f_font").value,
       theme: $("#f_theme").value,
       currency_symbol: $("#f_symbol").value.trim() || "$",
-      bg_dim: Number($("#f_dim").value) / 100
+      bg_dim: Number($("#f_dim").value) / 100,
+      sec_alpha: Number($("#f_secalpha").value) / 100
     }).eq("id", 1);
     btn.disabled = false;
     if (error) return fail(error);
