@@ -231,15 +231,22 @@
     }
 
     menu.innerHTML = withItems.map((c) => {
-      const items = prods.filter((p) => p.category_id === c.id).map((p) => `
+      const items = prods.filter((p) => p.category_id === c.id).map((p) => {
+        const precio = money(p.price, symbol);
+        const nota = p.price_note ? '<span class="item-note">' + esc(p.price_note) + "</span>" : "";
+        // Sin precio cargado no dibujamos los puntitos: quedarían colgando en el vacío.
+        const derecha = precio
+          ? '<span class="dots"></span><span class="item-price">' + esc(precio) + nota + "</span>"
+          : (p.price_note ? '<span class="dots"></span><span class="item-price">' + nota + "</span>" : "");
+        return `
         <article class="item">
           <div class="item-head">
             <span class="item-name">${esc(p.name)}</span>
-            <span class="dots"></span>
-            <span class="item-price">${esc(money(p.price, symbol))}${p.price_note ? '<span class="item-note">' + esc(p.price_note) + "</span>" : ""}</span>
+            ${derecha}
           </div>
           ${p.description ? '<p class="item-desc">' + esc(p.description) + "</p>" : ""}
-        </article>`).join("");
+        </article>`;
+      }).join("");
       return `<section id="sec-${esc(c.id)}">
           <div class="sec-head">
             <h2>${esc(c.name)}</h2>
