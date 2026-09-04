@@ -1,6 +1,6 @@
 {
   "name": "JPSoft Dairus",
-  "short_name": "Panel",
+  "short_name": "JPSoft Dairus",
   "description": "Panel de administración de la carta",
   "lang": "es-AR",
   "start_url": "./admin.html",
