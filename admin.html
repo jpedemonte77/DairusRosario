@@ -124,6 +124,18 @@
   .colorline{display:flex; align-items:center; gap:10px}
   input[type=color]{width:46px; height:38px; padding:2px; border:1px solid var(--line); border-radius:9px; background:#fff}
 
+  /* recortador de fotos */
+  .recorte{position:relative; width:100%; overflow:hidden; background:#e6e4df;
+           border-radius:10px; margin-top:10px; touch-action:none; cursor:grab;
+           user-select:none; -webkit-user-select:none}
+  .recorte.arrastrando{cursor:grabbing}
+  .recorte img{position:absolute; top:0; left:0; transform-origin:0 0; max-width:none;
+               -webkit-user-drag:none; pointer-events:none}
+  .recorte::after{content:''; position:absolute; inset:0; border-radius:10px; pointer-events:none;
+                  box-shadow:inset 0 0 0 2px rgba(255,255,255,.9), inset 0 0 0 3px rgba(43,51,46,.12)}
+  .recorte-vacio{display:flex; align-items:center; justify-content:center; color:var(--soft);
+                 font-size:.85rem; height:100%}
+
   /* qr */
   #qrbox{display:flex; justify-content:center; padding:22px; background:#fff;
          border:1px solid var(--line); border-radius:var(--radius); margin-top:14px}
@@ -165,7 +177,7 @@
 
   <!-- ---- pestaña carta ---- -->
   <div id="tab-menu">
-    <p class="hint" style="margin-top:16px">Los cambios se publican al instante. Lo que ocultes deja de verse en la carta pública, pero no se borra.</p>
+    <p class="hint" style="margin-top:16px">Los cambios se publican al instante. Lo que ocultes deja de verse en la carta pública, pero no se borra. Las fotos podés subirlas de cualquier tamaño: el panel las ajusta solo.</p>
     <button class="btn primary" id="addCat">+ Nueva sección</button>
     <div id="cats"></div>
   </div>
@@ -186,7 +198,7 @@
 
     <div class="card">
       <h2>Imágenes</h2>
-      <p class="hint">JPG o PNG, menos de 1 MB. Las fotos de sección se ven mejor apaisadas (más anchas que altas), con el motivo al centro.</p>
+      <p class="hint">Subí la foto tal como está: de cualquier tamaño y peso. El panel la recorta, la achica y la optimiza sola.</p>
       <label for="f_bg">Imagen de fondo</label>
       <input type="file" id="f_bg" accept="image/*">
       <img class="thumb" id="bgThumb" alt="">
@@ -292,6 +304,21 @@
 </dialog>
 
 <input type="file" id="catImgInput" accept="image/*" hidden>
+
+<dialog id="imgDlg">
+  <div class="dlg-body">
+    <h2 id="imgDlgTitle">Encuadrar la foto</h2>
+    <p class="hint" id="imgDlgHint"></p>
+    <div class="recorte" id="recorte"><img id="recorteImg" alt=""></div>
+    <label for="imgZoom">Acercar</label>
+    <input type="range" id="imgZoom" min="100" max="400" value="100">
+    <p class="hint" id="imgInfo" style="margin-top:10px"></p>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn" id="imgCancel" type="button">Cancelar</button>
+    <button class="btn primary" id="imgOk" type="button">Usar esta foto</button>
+  </div>
+</dialog>
 <div class="toast" id="toast"></div>
 
 <!-- =========================================================
@@ -477,23 +504,157 @@
     if (acts[b.dataset.act]) acts[b.dataset.act]();
   });
 
+  /* ================= recortador de fotos =================
+     Acepta cualquier foto (celular, cámara, descargada) y la deja
+     exactamente en la proporción y el peso que necesita la carta. */
+
+  const ED = { img: null, cw: 0, ch: 0, iw: 0, ih: 0,
+               base: 1, zoom: 1, tx: 0, ty: 0,
+               aspecto: 2.4, anchoMax: 1400, alGuardar: null };
+
+  function abrirImagen(file) {
+    return new Promise((ok, no) => {
+      if (file.type && !/^image\//.test(file.type)) return no(new Error("Ese archivo no es una imagen."));
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => ok(img);
+      img.onerror = () => no(new Error(
+        "No pudimos abrir esa imagen. Si viene de un iPhone puede ser HEIC: compartila o guardala como JPG."));
+      img.src = url;
+    });
+  }
+
+  function edAplicar() {
+    const s = ED.base * ED.zoom;
+    ED.tx = Math.min(0, Math.max(ED.cw - ED.iw * s, ED.tx));
+    ED.ty = Math.min(0, Math.max(ED.ch - ED.ih * s, ED.ty));
+    $("#recorteImg").style.transform =
+      "translate(" + ED.tx + "px," + ED.ty + "px) scale(" + s + ")";
+  }
+
+  async function recortar(file, opciones, alGuardar) {
+    let img;
+    try { img = await abrirImagen(file); } catch (e) { return fail(e); }
+
+    ED.img = img; ED.iw = img.naturalWidth; ED.ih = img.naturalHeight;
+    ED.aspecto = opciones.aspecto; ED.anchoMax = opciones.anchoMax;
+    ED.alGuardar = alGuardar; ED.zoom = 1;
+
+    $("#imgDlgTitle").textContent = opciones.titulo;
+    $("#imgDlgHint").textContent = opciones.ayuda;
+    $("#imgZoom").value = 100;
+
+    const caja = $("#recorte");
+    const el = $("#recorteImg");
+    el.src = img.src;
+    el.style.width = ED.iw + "px";
+    el.style.height = ED.ih + "px";
+
+    $("#imgDlg").showModal();               // hay que abrirlo para poder medir
+    ED.cw = caja.clientWidth;
+    ED.ch = Math.round(ED.cw / ED.aspecto);
+    caja.style.height = ED.ch + "px";
+
+    ED.base = Math.max(ED.cw / ED.iw, ED.ch / ED.ih);
+    ED.tx = (ED.cw - ED.iw * ED.base) / 2;
+    ED.ty = (ED.ch - ED.ih * ED.base) / 2;
+    edAplicar();
+    $("#imgInfo").textContent = "Original: " + ED.iw + " × " + ED.ih + " px";
+  }
+
+  // arrastrar para elegir el encuadre
+  (function () {
+    const caja = $("#recorte");
+    let activo = false, px = 0, py = 0;
+    caja.addEventListener("pointerdown", (e) => {
+      activo = true; px = e.clientX; py = e.clientY;
+      caja.setPointerCapture(e.pointerId); caja.classList.add("arrastrando");
+    });
+    caja.addEventListener("pointermove", (e) => {
+      if (!activo) return;
+      ED.tx += e.clientX - px; ED.ty += e.clientY - py;
+      px = e.clientX; py = e.clientY;
+      edAplicar();
+    });
+    const soltar = () => { activo = false; caja.classList.remove("arrastrando"); };
+    caja.addEventListener("pointerup", soltar);
+    caja.addEventListener("pointercancel", soltar);
+  })();
+
+  $("#imgZoom").addEventListener("input", (e) => {
+    const nuevo = Number(e.target.value) / 100;
+    // el centro de lo que se ve no se mueve al acercar
+    const s0 = ED.base * ED.zoom, s1 = ED.base * nuevo;
+    const cx = (ED.cw / 2 - ED.tx) / s0, cy = (ED.ch / 2 - ED.ty) / s0;
+    ED.zoom = nuevo;
+    ED.tx = ED.cw / 2 - cx * s1; ED.ty = ED.ch / 2 - cy * s1;
+    edAplicar();
+  });
+
+  $("#imgCancel").addEventListener("click", () => $("#imgDlg").close());
+
+  $("#imgOk").addEventListener("click", async () => {
+    const btn = $("#imgOk");
+    btn.disabled = true; btn.textContent = "Procesando…";
+    try {
+      const blob = await edExportar();
+      $("#imgDlg").close();
+      await ED.alGuardar(blob);
+    } catch (err) { fail(err); }
+    btn.disabled = false; btn.textContent = "Usar esta foto";
+  });
+
+  function edExportar() {
+    const s = ED.base * ED.zoom;
+    const sx = -ED.tx / s, sy = -ED.ty / s;
+    const sw = ED.cw / s, sh = ED.ch / s;
+    const ancho = Math.min(ED.anchoMax, Math.max(600, Math.round(sw)));
+    const alto = Math.round(ancho / ED.aspecto);
+
+    let fuente = ED.img, fx = sx, fy = sy, fw = sw, fh = sh;
+    // reducciones grandes en dos pasos: mucho más nítido que un salto único
+    if (sw / ancho > 2.5) {
+      const medio = document.createElement("canvas");
+      medio.width = Math.round(ancho * 2); medio.height = Math.round(alto * 2);
+      const mc = medio.getContext("2d");
+      mc.imageSmoothingEnabled = true; mc.imageSmoothingQuality = "high";
+      mc.drawImage(ED.img, sx, sy, sw, sh, 0, 0, medio.width, medio.height);
+      fuente = medio; fx = 0; fy = 0; fw = medio.width; fh = medio.height;
+    }
+
+    const c = document.createElement("canvas");
+    c.width = ancho; c.height = alto;
+    const ctx = c.getContext("2d");
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, ancho, alto);
+    ctx.drawImage(fuente, fx, fy, fw, fh, 0, 0, ancho, alto);
+
+    return new Promise((ok, no) => c.toBlob(
+      (b) => b ? ok(b) : no(new Error("No se pudo procesar la imagen")), "image/jpeg", 0.85));
+  }
+
   /* ---- foto de fondo de una sección ---- */
   let catFotoPendiente = null;
 
-  $("#catImgInput").addEventListener("change", async (e) => {
+  $("#catImgInput").addEventListener("change", (e) => {
     const file = e.target.files[0];
     const id = catFotoPendiente;
     e.target.value = "";
     catFotoPendiente = null;
     if (!file || !id) return;
-    toast("Subiendo foto…");
-    try {
-      const url = await upload(file, "seccion");
-      const { error } = await db.from("categories").update({ image_url: url }).eq("id", id);
-      if (error) throw error;
-      toast("Foto actualizada");
-      loadAll();
-    } catch (err) { fail(err); }
+    recortar(file,
+      { aspecto: 2.4, anchoMax: 1400, titulo: "Encuadrar la foto de la sección",
+        ayuda: "Arrastrá para elegir qué parte se ve y usá la barra para acercar. Sale sola en la medida y el peso que necesita la carta." },
+      async (blob) => {
+        toast("Subiendo foto…");
+        try {
+          const url = await upload(blob, "seccion");
+          const { error } = await db.from("categories").update({ image_url: url }).eq("id", id);
+          if (error) throw error;
+          toast("Foto lista · " + Math.round(blob.size / 1024) + " KB");
+          loadAll();
+        } catch (err) { fail(err); }
+      });
   });
 
   async function quitarFotoCat(id) {
@@ -672,32 +833,37 @@
   }
 
   async function upload(file, prefix) {
-    if (file.size > 5 * 1024 * 1024) throw new Error("La imagen pesa más de 5 MB. Achicala antes de subirla.");
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const path = prefix + "-" + Date.now() + "." + ext;
+    if (file.size > 5 * 1024 * 1024) throw new Error("La imagen pesa más de 5 MB.");
+    const path = prefix + "-" + Date.now() + ".jpg";
     const { error } = await db.storage.from("carta").upload(path, file, { upsert: true, cacheControl: "3600" });
     if (error) throw error;
     return db.storage.from("carta").getPublicUrl(path).data.publicUrl;
   }
 
-  function wireUpload(inputSel, thumbSel, field, prefix) {
-    $(inputSel).addEventListener("change", async (e) => {
+  function wireUpload(inputSel, thumbSel, field, prefix, opciones) {
+    $(inputSel).addEventListener("change", (e) => {
       const file = e.target.files[0];
-      if (!file) return;
-      toast("Subiendo imagen…");
-      try {
-        const url = await upload(file, prefix);
-        const { error } = await db.from("settings").update({ [field]: url }).eq("id", 1);
-        if (error) throw error;
-        state.settings[field] = url;
-        setThumb(thumbSel, url);
-        toast("Imagen actualizada");
-      } catch (err) { fail(err); }
       e.target.value = "";
+      if (!file) return;
+      recortar(file, opciones, async (blob) => {
+        toast("Subiendo imagen…");
+        try {
+          const url = await upload(blob, prefix);
+          const { error } = await db.from("settings").update({ [field]: url }).eq("id", 1);
+          if (error) throw error;
+          state.settings[field] = url;
+          setThumb(thumbSel, url);
+          toast("Imagen lista · " + Math.round(blob.size / 1024) + " KB");
+        } catch (err) { fail(err); }
+      });
     });
   }
-  wireUpload("#f_bg", "#bgThumb", "bg_url", "fondo");
-  wireUpload("#f_logo", "#logoThumb", "logo_url", "logo");
+  wireUpload("#f_bg", "#bgThumb", "bg_url", "fondo",
+    { aspecto: 0.72, anchoMax: 1200, titulo: "Encuadrar la imagen de fondo",
+      ayuda: "Se ve detrás de toda la carta, en vertical. Elegí qué parte queda en el centro." });
+  wireUpload("#f_logo", "#logoThumb", "logo_url", "logo",
+    { aspecto: 1, anchoMax: 600, titulo: "Encuadrar el logo",
+      ayuda: "En la carta se recorta en círculo. Dejá el logo centrado y bien al borde del marco." });
 
   function wireClear(btnSel, thumbSel, field, label) {
     $(btnSel).addEventListener("click", async () => {
