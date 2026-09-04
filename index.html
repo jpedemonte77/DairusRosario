@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carta</title>
-<meta name="theme-color" content="#0d0b0a">
+<meta name="theme-color" content="#f7f2ea">
 <meta name="description" content="Carta digital">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -16,17 +16,40 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600;700&family=Oswald:wght@200;300;400;500&display=swap" rel="stylesheet">
+<script>
+  /* Recuerda el tema de la visita anterior y lo aplica antes del primer pintado. */
+  try { if (localStorage.getItem("carta_tema") === "oscuro")
+          document.documentElement.dataset.theme = "oscuro"; } catch (e) {}
+</script>
 <style>
-  /* ---------- tema oscuro (por defecto) ---------- */
+  /* ---------- tema claro: el de la carta impresa, y el que se pinta primero ----------
+     Es el valor por defecto a propósito: así el primer cuadro que dibuja el
+     navegador ya sale en crema y no hay pantallazo mientras carga la base. */
   :root{
     --accent:#e2b263;
-    --accent-text:var(--accent);
-    --accent-ink:#161208;      /* texto sobre el color de acento */
+    --accent-text:#2f6152;                                     /* si el navegador no soporta color-mix */
+    --accent-text:color-mix(in srgb, var(--accent) 74%, #0f2a24);
+    --accent-ink:#ffffff;      /* texto sobre el color de acento */
     --dim:.60;
     --font:'Playfair Display', Georgia, serif;
     --body-font:'Inter', system-ui, sans-serif;
+    --bg:#f7f2ea;
+    --veil:247,242,234;        /* velo sobre la foto de fondo */
+    --ink:#2b332e;
+    --ink-soft:rgba(43,51,46,.74);
+    --line:rgba(43,51,46,.16);
+    --line-soft:rgba(43,51,46,.08);
+    --dots:rgba(43,51,46,.26);
+    --nav-a:rgba(247,242,234,.95);
+    --nav-b:rgba(247,242,234,.74);
+    --aviso:rgba(43,51,46,.94);
+  }
+  /* ---------- tema oscuro ---------- */
+  :root[data-theme="oscuro"]{
+    --accent-text:var(--accent);
+    --accent-ink:#161208;
     --bg:#0d0b0a;
-    --veil:9,8,7;              /* velo sobre la foto de fondo */
+    --veil:9,8,7;
     --ink:#f6f1e9;
     --ink-soft:rgba(246,241,233,.62);
     --line:rgba(246,241,233,.18);
@@ -35,22 +58,6 @@
     --nav-a:rgba(9,8,7,.94);
     --nav-b:rgba(9,8,7,.72);
     --aviso:rgba(20,17,14,.94);
-  }
-  /* ---------- tema claro: la paleta de la carta impresa ---------- */
-  :root[data-theme="claro"]{
-    --accent-text:#2f6152;                                     /* si el navegador no soporta color-mix */
-    --accent-text:color-mix(in srgb, var(--accent) 74%, #0f2a24);
-    --accent-ink:#ffffff;
-    --bg:#f7f2ea;
-    --veil:247,242,234;
-    --ink:#2b332e;
-    --ink-soft:rgba(43,51,46,.74);   /* más contraste que en oscuro: sobre crema hace falta */
-    --line:rgba(43,51,46,.16);
-    --line-soft:rgba(43,51,46,.08);
-    --dots:rgba(43,51,46,.26);
-    --nav-a:rgba(247,242,234,.95);
-    --nav-b:rgba(247,242,234,.74);
-    --aviso:rgba(43,51,46,.94);
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -241,9 +248,12 @@
 
   /* ---------- pintar ---------- */
   function applyTheme(s) {
-    // Tema claro u oscuro: cambia toda la paleta de una.
+    // Tema claro u oscuro. Claro es el estado sin atributo, que es el que ya
+    // está pintado, así que sólo marcamos el documento cuando toca oscuro.
     const tema = s.theme === "claro" ? "claro" : "oscuro";
-    document.documentElement.dataset.theme = tema;
+    if (tema === "oscuro") document.documentElement.dataset.theme = "oscuro";
+    else delete document.documentElement.dataset.theme;
+    try { localStorage.setItem("carta_tema", tema); } catch (e) {}
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = tema === "claro" ? "#f7f2ea" : "#0d0b0a";
 
