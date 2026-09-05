@@ -110,12 +110,14 @@
   section{padding-top:44px; scroll-margin-top:74px; position:relative}
   /* Foto de la sección: se muestra entera, a todo el ancho, arriba del título. */
   section.con-foto{padding-top:0}
+  /* La proporción es fija (2.4:1), la misma con la que recorta el panel:
+     así lo que se encuadra ahí es exactamente lo que se ve acá, en cualquier pantalla.
+     Con alto fijo, la caja cambiaba de forma según el ancho y `cover` comía el resto. */
   .sec-foto{
     display:block; width:calc(100% + 40px); margin:36px -20px 0;
-    height:150px; object-fit:cover; background:var(--line-soft);
+    aspect-ratio:2.4 / 1; object-fit:cover; background:var(--line-soft);
   }
   section.con-foto .sec-head{padding-top:20px}
-  @media (min-width:520px){ .sec-foto{height:180px} }
   h2{
     font-family:var(--font); font-weight:500; font-size:1.42rem; margin:0;
     letter-spacing:.02em; color:var(--accent-text);
