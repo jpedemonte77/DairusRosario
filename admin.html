@@ -586,7 +586,7 @@
 
     $("#imgDlg").showModal();               // hay que abrirlo para poder medir
     ED.cw = caja.clientWidth;
-    ED.ch = Math.round(ED.cw / ED.aspecto);
+    ED.ch = ED.cw / ED.aspecto;          // sin redondear: el marco es exacto
     caja.style.height = ED.ch + "px";
 
     ED.base = Math.max(ED.cw / ED.iw, ED.ch / ED.ih);
@@ -641,7 +641,7 @@
   function edExportar() {
     const s = ED.base * ED.zoom;
     const sx = -ED.tx / s, sy = -ED.ty / s;
-    const sw = ED.cw / s, sh = ED.ch / s;
+    const sw = ED.cw / s, sh = sw / ED.aspecto;   // el alto sale de la proporción, no de la caja
     const ancho = Math.min(ED.anchoMax, Math.max(600, Math.round(sw)));
     const alto = Math.round(ancho / ED.aspecto);
 
